@@ -21,8 +21,6 @@ pub struct DnsHeader {
     pub additional_records_count: u16
 }
 
-
-
 impl DnsHeader {
     fn is_query(&self) -> bool {
         self.flags & flags::QUERY == 0 // 0 - query, 1 - response
