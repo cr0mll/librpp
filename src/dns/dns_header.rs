@@ -1,17 +1,57 @@
 
+mod flags {
+    pub const QUERY: u16 = 0b1000_0000_0000_0000;
+    pub const OPCODE_MASK: u16 = 0b0111_1000_0000_0000;
+    pub const AUTHORITATIVE: u16 = 0b0000_0100_0000_0000;
+    pub const TRUNCATED: u16 = 0b0000_0010_0000_0000;
+    pub const RECURSION_DESIRED: u16 = 0b0000_0001_0000_0000;
+    pub const RECURSION_AVAILABLE: u16 = 0b0000_0000_1000_0000;
+    pub const AUTHENTIC_DATA: u16 = 0b0000_0000_0010_0000;
+    pub const CHECKING_DISABLED: u16 = 0b0000_0000_0001_0000;
+    pub const RESERVED_MASK: u16 = 0b0000_0000_0100_0000;
+    pub const RESPONSE_CODE_MASK: u16 = 0b0000_0000_0000_1111;
+}
+
 pub struct DnsHeader {
-    id: u16,
-    query: bool,
-    opcode: OpCode,
-    authoritative_answer: bool,
-    truncated: bool,
-    recursion_desired: bool,
-    recursion_available: bool,
-    response_code: RCode,
-    questions_count: u16,
-    answers_count: u16,
-    name_servers_count: u16,
-    additional_records_count: u16
+    pub id: u16,
+    flags: u16,
+    pub questions_count: u16,
+    pub answers_count: u16,
+    pub name_servers_count: u16,
+    pub additional_records_count: u16
+}
+
+
+
+impl DnsHeader {
+    fn is_query(&self) -> bool {
+        self.flags & flags::QUERY == 0 // 0 - query, 1 - response
+    }
+
+    fn get_opcode(&self) -> OpCode {
+        ((self.flags & flags::OPCODE_MASK) >> flags::OPCODE_MASK.trailing_zeros()).into()
+    }
+
+    fn is_authoritative_answer(&self) -> bool {
+        self.flags & flags::AUTHORITATIVE != 0
+    }
+
+    fn is_truncated(&self) -> bool {
+        self.flags & flags::TRUNCATED != 0
+    }
+
+    fn is_recursion_desired(&self) -> bool {
+        self.flags & flags::RECURSION_DESIRED != 0
+    }
+
+    fn is_recursion_available(&self) -> bool {
+        self.flags & flags::RECURSION_AVAILABLE != 0
+    }
+
+    fn get_response_code(&self) -> RCode {
+        (self.flags & flags::RESPONSE_CODE_MASK).into()
+    }
+
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -28,6 +68,20 @@ pub enum OpCode {
     Update = 5,
     /// Reserved opcode for future use
     Reserved,
+}
+
+impl From<u16> for OpCode {
+    fn from(code: u16) -> Self {
+        use OpCode::*;
+        match code {
+            0 => StandardQuery,
+            1 => InverseQuery,
+            2 => ServerStatusRequest,
+            4 => Notify,
+            5 => Update,
+            _ => Reserved,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -65,4 +119,24 @@ pub enum RCode {
 
     /// Reserved for future use.
     Reserved,
+}
+
+impl From<u16> for RCode {
+    fn from(code: u16) -> Self {
+        use RCode::*;
+        match code {
+            0 => NoError,
+            1 => FormatError,
+            2 => ServerFailure,
+            3 => NameError,
+            4 => NotImplemented,
+            5 => Refused,
+            6 => YXDOMAIN,
+            7 => YXRRSET,
+            8 => NXRRSET,
+            9 => NOTAUTH,
+            10 => NOTZONE,
+            _ => RCode::Reserved,
+        }
+    }
 }
