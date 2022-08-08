@@ -1,3 +1,6 @@
+mod datalink;
+mod dns;
+
 #[cfg(test)]
 mod tests {
     #[test]

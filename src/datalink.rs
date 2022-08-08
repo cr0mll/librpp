@@ -1,0 +1,6 @@
+
+mod datalink {
+    struct EthernetFrame {
+        
+    }
+}
