@@ -28,6 +28,8 @@ impl Layer for DnsLayer {
     fn get_OSI_level(&self) -> u8 {
         7
     }
+
+    fn as_any(&self) -> &dyn std::any::Any { self }
 }
 
 pub struct Label {

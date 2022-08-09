@@ -1,7 +1,7 @@
 use crate::packet::{Layer, LayerType};
 
 pub struct EthernetLayer {
-
+    pub mac: String
 }
 
 impl Layer for EthernetLayer {
@@ -16,4 +16,6 @@ impl Layer for EthernetLayer {
     fn get_OSI_level(&self) -> u8 {
         2
     }
+
+    fn as_any(&self) -> &dyn std::any::Any { self }
 }

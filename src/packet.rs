@@ -1,5 +1,7 @@
 use crate::{datalink, application};
 
+use std::any::Any;
+
 pub const MAX_LAYER_COUNT: u8 = 7;
 
 pub struct Packet {
@@ -49,6 +51,7 @@ pub trait Layer {
     fn get_name(&self) -> &'static str;
     fn get_type(&self) -> LayerType;
     fn get_OSI_level(&self) -> u8;
+    fn as_any(&self) -> &dyn Any;
 }
 
 /// A private enum for the implementation of Packet.
@@ -75,25 +78,26 @@ impl From<Layers> for LayerType {
 
 #[cfg(test)]
 mod tests {
+    use crate::application::DnsLayer;
+
     #[test]
     fn test_layer() {
         use crate::Packet;
         use crate::datalink::EthernetLayer;
+        
         let mut packet = Packet::new();
 
-        match packet.add_layer(Box::new(EthernetLayer {})) {
+        match packet.add_layer(Box::new(EthernetLayer {mac: String::from("1213")})) {
             Ok(_) => println!("Layer added!"),
             Err(e) => panic!("{}", e)
         }
 
-        // The test should fail if we were able to add the same layer twice.
-        match packet.add_layer(Box::new(EthernetLayer {})) {
-            Ok(_) => panic!("Layer added!"),
-            Err(e) => println!("{}", e)
-        }
-
         match packet.get_layer("Ethernet") {
-            Some(layer) => (),
+            Some(layer) => {
+                if let Some(layer) = layer.as_any().downcast_ref::<EthernetLayer>() {
+                    println!("Layer mac: {}", layer.mac);
+                }
+            },
             None => panic!("Layer not found")
         }
     }
