@@ -1,5 +1,8 @@
 mod datalink;
-mod dns;
+mod application;
+mod packet;
+
+pub use packet::Packet;
 
 #[cfg(test)]
 mod tests {
