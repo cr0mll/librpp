@@ -58,7 +58,7 @@ pub trait Layer {
 /// The Packet struct automatically converts to the underlying layer type when get_layer() is invoked.
 enum Layers {
     EthernetLayer(datalink::EthernetLayer),
-    DNSLayer(application::DnsLayer)
+    DNSLayer(application::DNSLayer)
 }
 
 
@@ -78,7 +78,7 @@ impl From<Layers> for LayerType {
 
 #[cfg(test)]
 mod tests {
-    use crate::application::DnsLayer;
+    use crate::application::DNSLayer;
 
     #[test]
     fn test_layer() {

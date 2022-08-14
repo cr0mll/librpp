@@ -1,15 +1,15 @@
 
 mod flags {
     pub const QUERY: u16 = 0b1000_0000_0000_0000;
-    pub const OPCODE_MASK: u16 = 0b0111_1000_0000_0000;
+    pub const OPCODE: u16 = 0b0111_1000_0000_0000;
     pub const AUTHORITATIVE: u16 = 0b0000_0100_0000_0000;
     pub const TRUNCATED: u16 = 0b0000_0010_0000_0000;
     pub const RECURSION_DESIRED: u16 = 0b0000_0001_0000_0000;
     pub const RECURSION_AVAILABLE: u16 = 0b0000_0000_1000_0000;
     pub const AUTHENTIC_DATA: u16 = 0b0000_0000_0010_0000;
     pub const CHECKING_DISABLED: u16 = 0b0000_0000_0001_0000;
-    pub const RESERVED_MASK: u16 = 0b0000_0000_0100_0000;
-    pub const RESPONSE_CODE_MASK: u16 = 0b0000_0000_0000_1111;
+    pub const RESERVED: u16 = 0b0000_0000_0100_0000;
+    pub const RCODE: u16 = 0b0000_0000_0000_1111;
 }
 
 pub struct DnsHeader {
@@ -27,7 +27,7 @@ impl DnsHeader {
     }
 
     fn get_opcode(&self) -> OpCode {
-        ((self.flags & flags::OPCODE_MASK) >> flags::OPCODE_MASK.trailing_zeros()).into()
+        ((self.flags & flags::OPCODE) >> flags::OPCODE.trailing_zeros()).into()
     }
 
     fn is_authoritative_answer(&self) -> bool {
@@ -47,7 +47,7 @@ impl DnsHeader {
     }
 
     fn get_response_code(&self) -> RCode {
-        (self.flags & flags::RESPONSE_CODE_MASK).into()
+        (self.flags & flags::RCODE).into()
     }
 
 }

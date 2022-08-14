@@ -1,14 +1,16 @@
 mod dns_header;
 mod question;
 mod resource_record;
+mod name;
 
 pub use dns_header::*;
 pub use question::*;
 pub use resource_record::*;
+pub use name::Name;
 
 use crate::packet::{Layer, LayerType};
 
-pub struct DnsLayer {
+pub struct DNSLayer {
     header: DnsHeader,
     questions: Vec<Question>,
     answers: Vec<ResourceRecord>,
@@ -16,7 +18,7 @@ pub struct DnsLayer {
     additional: Vec<ResourceRecord>
 }
 
-impl Layer for DnsLayer {
+impl Layer for DNSLayer {
     fn get_name(&self) -> &'static str {
         "DNS"
     }
@@ -30,37 +32,6 @@ impl Layer for DnsLayer {
     }
 
     fn as_any(&self) -> &dyn std::any::Any { self }
-}
-
-pub struct Label {
-    length: u8,
-    contents: String
-}
-
-impl Label {
-    fn new(length: u8, contents: String) -> Self {
-        Label { length, contents }
-    }
-}
-
-/// A DNS resource name comprised of labels
-pub struct Name {
-    labels: Vec<Label>
-}
-
-impl Name {
-    fn new(bytes: &[u8]) -> Self {
-        let mut labels: Vec<Label> = Vec::new();
-
-        let mut i = 0;
-        while bytes[i] != 0 {
-            let contents = String::from_utf8_lossy(&bytes[i..i + bytes[i] as usize]).to_owned();
-            labels.push(Label::new(bytes[i], contents.to_string()));
-            i += bytes[i] as usize + 1;
-        }
-
-        Name { labels }
-    }
 }
 
 /// Possible Type values for a Question in a DNS packet  
