@@ -7,6 +7,7 @@ use byteorder::{NetworkEndian, ByteOrder};
 use crate::application::dns::{Name, Type, Class};
 use crate::Raw;
 
+/// A structure representing a DNS query.
 pub struct Question {
     pub name: Name,
     pub qtype: Type,
@@ -14,7 +15,7 @@ pub struct Question {
 }
 
 impl Question {
-    fn new(name: Name, qtype: Type, class: Class, unicast_response: bool) -> Self {
+    pub fn new(name: Name, qtype: Type, class: Class, unicast_response: bool) -> Self {
         Question {
             name,
             qtype,
@@ -24,7 +25,7 @@ impl Question {
     }
 
     /// Constructs a DNS question from the given bytes.
-    fn from_bytes(bytes: &[u8]) -> Self {
+    pub fn from_bytes(bytes: &[u8]) -> Self {
         let name = Name::from_bytes(bytes);
         let name_end = name.raw_size();
         
@@ -37,14 +38,14 @@ impl Question {
 
     /// Retreives the class of the question.
     /// panic!() is called if the class is invalid, which may only happen if the question has been manually altered in unsafe blocks.
-    fn class(&self) -> Class {
+    pub fn class(&self) -> Class {
         // Apparently Rust has no API for converting ints to enums. C++ - 1, Rust - 0.
         Class::try_from(self.class & 0x00ff).expect("DNS question contains invalid classs!")
     }
 
     /// Returns whether or not the question prefers a unicast response.
     /// This information is extracted from the class field.
-    fn prefers_unicast_response(&self) -> bool {
+    pub fn prefers_unicast_response(&self) -> bool {
         self.class & 0x8000 != 0
     }
 }

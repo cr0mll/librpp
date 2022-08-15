@@ -2,6 +2,7 @@ mod header;
 mod question;
 mod resource_record;
 mod name;
+mod rdata;
 
 use std::mem::size_of;
 
@@ -14,6 +15,7 @@ pub use name::Name;
 use crate::packet::{Layer, LayerType};
 use crate::Raw;
 
+#[derive(Debug)]
 pub struct DNSLayer {
     header: DNSHeader,
     questions: Vec<Question>,
@@ -23,7 +25,52 @@ pub struct DNSLayer {
 }
 
 impl DNSLayer {
-    
+    pub fn new(header: DNSHeader, questions: Vec<Question>, answers: Vec<ResourceRecord>, authority: Vec<ResourceRecord>, additional: Vec<ResourceRecord>) -> Self{
+        DNSLayer {
+            header,
+            questions,
+            answers,
+            authority,
+            additional
+        }
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        let header = DNSHeader::from_bytes(bytes[0..size_of::<DNSHeader>()].try_into().unwrap());
+
+        let mut questions: Vec<Question> = Vec::with_capacity(header.questions_count as usize);
+        let mut answers: Vec<ResourceRecord> = Vec::with_capacity(header.answers_count as usize);
+        let mut authority: Vec<ResourceRecord> = Vec::with_capacity(header.name_servers_count as usize);
+        let mut additional: Vec<ResourceRecord> = Vec::with_capacity(header.additional_records_count as usize);
+
+        let mut start: usize = header.raw_size();
+        
+        for i in 0..header.questions_count {
+            let q = Question::from_bytes(&bytes[start..]);
+            start += q.raw_size();
+            questions.push(q);
+        }
+
+        for i in 0..header.answers_count {
+            let a = ResourceRecord::from_bytes(&bytes[start..]);
+            start += a.raw_size();
+            answers.push(a);
+        }
+
+        for i in 0..header.name_servers_count {
+            let auth = ResourceRecord::from_bytes(&bytes[start..]);
+            start += auth.raw_size();
+            authority.push(auth);
+        }
+
+        for i in 0..header.additional_records_count {
+            let add = ResourceRecord::from_bytes(&bytes[start..]);
+            start += add.raw_size();
+            additional.push(add);
+        }
+
+        DNSLayer { header, questions, answers, authority, additional }
+    }
 }
 
 impl Layer for DNSLayer {
@@ -96,7 +143,7 @@ impl Raw for DNSLayer {
 #[derive(Debug, Copy, Clone, PartialEq, TryFromPrimitive)]
 pub enum Type {
     /// Represents an IPv4 address
-    A,
+    A = 0x0001,
     /// Represents an IPv6 address. [RFC 3596](https://tools.ietf.org/html/rfc3596)
     AAAA,
     /// For servers with ASD cells
@@ -156,4 +203,27 @@ pub enum Class {
     HS = 4,
     /// [RFC 2136](https://datatracker.ietf.org/doc/html/rfc2136)
     NONE = 254,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Raw, application::dns::DNSHeader};
+
+    use super::DNSLayer;
+
+
+    #[test]
+    fn test_dns_name() {
+        std::env::set_var("RUST_BACKTRACE", "full");
+
+        let bytes = b"\x42\x74\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x04\x70\x72\x6f\x64\x0e\x69\x6e\x67\x65\x73\x74\x69\x6f\x6e\x2d\x65\x64\x67\x65\x04\x70\x72\x6f\x64\x07\x64\x61\x74\x61\x6f\x70\x73\x06\x6d\x6f\x7a\x67\x63\x70\x03\x6e\x65\x74\x00\x00\x01\x00\x01";
+        let layer = DNSLayer::from_bytes(bytes);
+        println!("DNS layer: {:#?}", layer);
+
+        let new_bytes = layer.raw();
+        assert_eq!(new_bytes, bytes);
+        
+        let layer = DNSLayer::from_bytes(&new_bytes);
+        println!("DNS layer: {:#?}", layer);
+    }
 }

@@ -45,14 +45,14 @@ impl Raw for Label {
     }
 }
 
-/// A DNS resource name comprised of labels
+/// A DNS resource name comprised of labels.
 #[derive(Debug)]
 pub struct Name {
     labels: Vec<Label>
 }
 
 impl Name {
-
+    /// Constructs a DNS resource name from a string.
     pub fn new(s: &str) -> Name {
         // DNS names usually have 2-3 labels: example.com, other.example.com
         let mut labels: Vec<Label> = Vec::with_capacity(3);
