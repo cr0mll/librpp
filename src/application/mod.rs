@@ -1,2 +1,1 @@
-mod dns;
-pub use dns::*;
+pub mod dns;

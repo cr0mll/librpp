@@ -1,46 +1,96 @@
 
+use core::panic;
+use std::mem::size_of;
+
+use byteorder::{NetworkEndian, ByteOrder};
+
+use crate::application::dns::{Name, Type, Class};
+use crate::Raw;
+
 pub struct Question {
-    pub name: Vec<Label>,
+    pub name: Name,
     pub qtype: Type,
-    pub class: Class,
-    pub unicast_response: bool
+    class: u16,
 }
 
-pub struct Label {
-    length: u8,
-    contents: String
+impl Question {
+    fn new(name: Name, qtype: Type, class: Class, unicast_response: bool) -> Self {
+        Question {
+            name,
+            qtype,
+            // Sets the upper-most bit of class to 1, if unicast_response is true
+            class: class as u16 | (0x8000 * unicast_response as u16)
+        }
+    }
+
+    /// Constructs a DNS question from the given bytes.
+    fn from_bytes(bytes: &[u8]) -> Self {
+        let name = Name::from_bytes(bytes);
+        let name_end = name.raw_size();
+        
+        Question {
+            name,
+            qtype: Type::try_from(NetworkEndian::read_u16(&bytes[name_end..name_end + 2])).expect("DNS question has invalid type"),
+            class: NetworkEndian::read_u16(&bytes[name_end + 2..name_end + 4])
+        }
+    }
+
+    /// Retreives the class of the question.
+    /// panic!() is called if the class is invalid, which may only happen if the question has been manually altered in unsafe blocks.
+    fn class(&self) -> Class {
+        // Apparently Rust has no API for converting ints to enums. C++ - 1, Rust - 0.
+        Class::try_from(self.class & 0x0011).expect("DNS question contains invalid classs!")
+    }
+
+    /// Returns whether or not the question prefers a unicast response.
+    /// This information is extracted from the class field.
+    fn prefers_unicast_response(&self) -> bool {
+        self.class & 0x8000 != 0
+    }
 }
 
-/// Possible Type values for a Question in a DNS packet  
-#[repr(u16)]
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum Type {
-    
-    /// A request for incremental transfer of a zone. [RFC 1995](https://tools.ietf.org/html/rfc1995)
-    IXFR,
-    /// A request for a transfer of an entire zone, [RFC 1035](https://tools.ietf.org/html/rfc1035)
-    AXFR,
-    /// A request for mailbox-related records (MB, MG or MR), [RFC 1035](https://tools.ietf.org/html/rfc1035)
-    MAILB,
-    /// A request for mail agent RRs (Obsolete - see MX), [RFC 1035](https://tools.ietf.org/html/rfc1035)
-    MAILA,
-    /// A request for all records, [RFC 1035](https://tools.ietf.org/html/rfc1035)
-    ANY,
+impl Raw for Question {
+    fn raw(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(self.raw_size());
+
+        bytes.append(&mut self.name.raw());
+        NetworkEndian::write_u16(&mut bytes, self.qtype as u16);
+        NetworkEndian::write_u16(&mut bytes, self.class as u16);
+
+        bytes
+    }
+
+    fn raw_size(&self) -> usize {
+        self.name.raw_size() + size_of::<Type>() + size_of::<Class>()
+    }
 }
 
+impl std::fmt::Debug for Question {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Question")
+         .field("name", &self.name)
+         .field("type", &self.qtype)
+         .field("class", &self.class())
+         .field("prefers unicast response", &self.prefers_unicast_response())
+         .finish()
+    }
+}
 
-/// Possible Class values for a Resource in a DNS packet  
-#[repr(u16)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum Class {
-    /// The Internet, [RFC 1035](https://tools.ietf.org/html/rfc1035)
-    IN = 1,
-    /// The CSNET class (Obsolete - used only for examples in some obsolete RFCs), [RFC 1035](https://tools.ietf.org/html/rfc1035)
-    CS = 2,
-    /// The CHAOS class, [RFC 1035](https://tools.ietf.org/html/rfc1035)
-    CH = 3,
-    /// Hesiod [Dyer 87], [RFC 1035](https://tools.ietf.org/html/rfc1035)
-    HS = 4,
-    /// [RFC 2136](https://datatracker.ietf.org/doc/html/rfc2136)
-    NONE = 254,
+#[cfg(test)]
+mod tests {
+    use crate::{application::dns::{name::Name, Type, Class}, Raw};
+
+    use super::Question;
+
+    #[test]
+    fn test_dns_question() {
+        std::env::set_var("RUST_BACKTRACE", "1");
+        let q = Question::new(Name::new("question.example.com"), Type::A, Class::IN, true);
+        println!("Question 1: {:?}", q);
+
+        let raw = q.raw();
+        println!("Raw question: {:?}", raw);
+        let q = Question::from_bytes(&raw);
+        println!("Question 1: {:?}", q);
+    }
 }

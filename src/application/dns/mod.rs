@@ -1,21 +1,29 @@
-mod dns_header;
+mod header;
 mod question;
 mod resource_record;
 mod name;
 
-pub use dns_header::*;
+use std::mem::size_of;
+
+pub use header::*;
+use num_enum::TryFromPrimitive;
 pub use question::*;
 pub use resource_record::*;
 pub use name::Name;
 
 use crate::packet::{Layer, LayerType};
+use crate::Raw;
 
 pub struct DNSLayer {
-    header: DnsHeader,
+    header: DNSHeader,
     questions: Vec<Question>,
     answers: Vec<ResourceRecord>,
     authority: Vec<ResourceRecord>,
     additional: Vec<ResourceRecord>
+}
+
+impl DNSLayer {
+    
 }
 
 impl Layer for DNSLayer {
@@ -27,16 +35,65 @@ impl Layer for DNSLayer {
         LayerType::DNSLayer
     }
 
-    fn get_OSI_level(&self) -> u8 {
+    fn get_osi_level(&self) -> u8 {
         7
     }
 
     fn as_any(&self) -> &dyn std::any::Any { self }
+
+    fn get_payload(&self) -> Vec<u8> {
+        let mut bytes:Vec<u8> = Vec::with_capacity(self.raw_size() - size_of::<DNSHeader>());
+
+        for q in &self.questions {
+            bytes.append(&mut q.raw());
+        }
+        for rr in &self.answers {
+            bytes.append(&mut rr.raw());
+        }
+        for auth in &self.authority {
+            bytes.append(&mut auth.raw());
+        }
+        for add in &self.additional {
+            bytes.append(&mut add.raw());
+        }
+
+        bytes
+    }
+}
+
+impl Raw for DNSLayer {
+    fn raw(&self) -> Vec<u8> {
+        let mut bytes:Vec<u8> = Vec::with_capacity(self.raw_size());
+
+        bytes.append(&mut self.header.raw()); // header
+        bytes.append(&mut self.get_payload()); // payload
+
+        bytes
+    }
+
+    fn raw_size(&self) -> usize {
+        let mut size = size_of::<DNSHeader>();
+
+        for q in &self.questions {
+            size += q.raw_size();
+        }
+        for rr in &self.answers {
+            size += rr.raw_size();
+        }
+        for auth in &self.authority {
+            size += auth.raw_size();
+        }
+        for add in &self.additional {
+            size += add.raw_size();
+        }
+
+        size
+    }
 }
 
 /// Possible Type values for a Question in a DNS packet  
 #[repr(u16)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, TryFromPrimitive)]
 pub enum Type {
     /// Represents an IPv4 address
     A,
@@ -87,7 +144,7 @@ pub enum Type {
 
 /// Possible Class values for a Resource in a DNS packet  
 #[repr(u16)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, TryFromPrimitive)]
 pub enum Class {
     /// The Internet, [RFC 1035](https://tools.ietf.org/html/rfc1035)
     IN = 1,

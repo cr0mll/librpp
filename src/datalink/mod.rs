@@ -1,3 +1,3 @@
 
 mod ethernet;
-pub use ethernet::EthernetLayer;
+// pub use ethernet::EthernetLayer;

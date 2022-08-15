@@ -1,4 +1,10 @@
+use std::mem::size_of;
 
+use byteorder::{ByteOrder, NetworkEndian};
+
+use crate::Raw;
+
+/// Flag masks for the flags field of DNSHeader.
 mod flags {
     pub const QUERY: u16 = 0b1000_0000_0000_0000;
     pub const OPCODE: u16 = 0b0111_1000_0000_0000;
@@ -12,7 +18,9 @@ mod flags {
     pub const RCODE: u16 = 0b0000_0000_0000_1111;
 }
 
-pub struct DnsHeader {
+/// A structure representing a DNS header.
+#[derive(Debug)]
+pub struct DNSHeader {
     pub id: u16,
     flags: u16,
     pub questions_count: u16,
@@ -21,15 +29,39 @@ pub struct DnsHeader {
     pub additional_records_count: u16
 }
 
-impl DnsHeader {
+impl DNSHeader {
+    /// Constructs a DNS header from the values given.
+    /// Use this when artificially creating packets.
+    fn new(id: u16, flags: u16, questions_count: u16, answers_count: u16, name_servers_count: u16, additional_records_count: u16) -> Self {
+        DNSHeader { id, flags, questions_count, answers_count, name_servers_count, additional_records_count }
+    }
+
+    /// Parses an array of bytes into a DNS header.
+    /// The size of the header is fixed, so we can use size_of::<u16>() * 6 to calculate it - a total of 12 bytes.
+    fn from_bytes(bytes: [u8; size_of::<u16>() * 6]) -> Self {
+        DNSHeader { 
+            id: NetworkEndian::read_u16(&bytes[0..2]),
+            flags: NetworkEndian::read_u16(&bytes[2..4]),
+            questions_count: NetworkEndian::read_u16(&bytes[4..6]),
+            answers_count: NetworkEndian::read_u16(&bytes[6..8]),
+            name_servers_count: NetworkEndian::read_u16(&bytes[8..10]),
+            additional_records_count: NetworkEndian::read_u16(&bytes[10..])
+        }
+    }
+
+    /// Checks the header flags to see if the DNS packet is a query or response packet.
+    /// If the flag is set to 0, then this is a query.
+    /// If the flag is set to 1, then this is a response.
     fn is_query(&self) -> bool {
         self.flags & flags::QUERY == 0 // 0 - query, 1 - response
     }
 
+    /// Retrieves the DNS opcode from the flags field.
     fn get_opcode(&self) -> OpCode {
         ((self.flags & flags::OPCODE) >> flags::OPCODE.trailing_zeros()).into()
     }
 
+    /// 
     fn is_authoritative_answer(&self) -> bool {
         self.flags & flags::AUTHORITATIVE != 0
     }
@@ -46,10 +78,30 @@ impl DnsHeader {
         self.flags & flags::RECURSION_AVAILABLE != 0
     }
 
+    /// Returns the response code which the DNS server issued.
     fn get_response_code(&self) -> RCode {
         (self.flags & flags::RCODE).into()
     }
 
+}
+
+impl Raw for DNSHeader {
+    fn raw(&self) -> Vec<u8> {
+        let mut bytes:Vec<u8> = Vec::with_capacity(self.raw_size());
+
+        NetworkEndian::write_u16(&mut bytes, self.id);
+        NetworkEndian::write_u16(&mut bytes, self.flags);
+        NetworkEndian::write_u16(&mut bytes, self.questions_count);
+        NetworkEndian::write_u16(&mut bytes, self.answers_count);
+        NetworkEndian::write_u16(&mut bytes, self.name_servers_count);
+        NetworkEndian::write_u16(&mut bytes, self.additional_records_count);
+
+        bytes
+    }
+
+    fn raw_size(&self) -> usize {
+        size_of::<u16>() * 6
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]

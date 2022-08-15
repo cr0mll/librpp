@@ -26,7 +26,7 @@ impl Packet {
 
     fn add_layer(&mut self, layer: Box<dyn Layer>) -> Result<(), Box<dyn std::error::Error>> {
         for l in &self.layers {
-            if l.get_OSI_level() == layer.get_OSI_level() {
+            if l.get_osi_level() == layer.get_osi_level() {
                 return Result::Err(Box::new(DuplicateLayerError {}));
             }
         }
@@ -50,27 +50,27 @@ impl std::fmt::Display for DuplicateLayerError {
 pub trait Layer {
     fn get_name(&self) -> &'static str;
     fn get_type(&self) -> LayerType;
-    fn get_OSI_level(&self) -> u8;
+    fn get_osi_level(&self) -> u8;
+    fn get_payload(&self) -> Vec<u8>;
+
     fn as_any(&self) -> &dyn Any;
 }
 
 /// A private enum for the implementation of Packet.
 /// The Packet struct automatically converts to the underlying layer type when get_layer() is invoked.
 enum Layers {
-    EthernetLayer(datalink::EthernetLayer),
-    DNSLayer(application::DNSLayer)
+    DNSLayer(application::dns::DNSLayer)
 }
 
 
 pub enum LayerType {
-    EthernetLayer,
     DNSLayer
 }
 
 impl From<Layers> for LayerType {
     fn from(other: Layers) -> Self {
         match other {
-            Layers::EthernetLayer(_) => Self::EthernetLayer,
+            // Layers::EthernetLayer(_) => Self::EthernetLayer,
             Layers::DNSLayer(_) => Self::DNSLayer
         }
     }
@@ -78,27 +78,14 @@ impl From<Layers> for LayerType {
 
 #[cfg(test)]
 mod tests {
-    use crate::application::DNSLayer;
+    use crate::application::dns::DNSLayer;
 
     #[test]
     fn test_layer() {
         use crate::Packet;
-        use crate::datalink::EthernetLayer;
         
         let mut packet = Packet::new();
 
-        match packet.add_layer(Box::new(EthernetLayer {mac: String::from("1213")})) {
-            Ok(_) => println!("Layer added!"),
-            Err(e) => panic!("{}", e)
-        }
-
-        match packet.get_layer("Ethernet") {
-            Some(layer) => {
-                if let Some(layer) = layer.as_any().downcast_ref::<EthernetLayer>() {
-                    println!("Layer mac: {}", layer.mac);
-                }
-            },
-            None => panic!("Layer not found")
-        }
+        
     }
 }
