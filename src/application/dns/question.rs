@@ -39,7 +39,7 @@ impl Question {
     /// panic!() is called if the class is invalid, which may only happen if the question has been manually altered in unsafe blocks.
     fn class(&self) -> Class {
         // Apparently Rust has no API for converting ints to enums. C++ - 1, Rust - 0.
-        Class::try_from(self.class & 0x0011).expect("DNS question contains invalid classs!")
+        Class::try_from(self.class & 0x00ff).expect("DNS question contains invalid classs!")
     }
 
     /// Returns whether or not the question prefers a unicast response.
@@ -53,9 +53,19 @@ impl Raw for Question {
     fn raw(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(self.raw_size());
 
-        bytes.append(&mut self.name.raw());
-        NetworkEndian::write_u16(&mut bytes, self.qtype as u16);
-        NetworkEndian::write_u16(&mut bytes, self.class as u16);
+        let mut name = self.name.raw();
+        let name_size = name.len();
+        bytes.append(&mut name);
+
+        // Reserve size for type and class
+        bytes.push(0);
+        bytes.push(0);
+        bytes.push(0);
+        bytes.push(0);
+
+        // Write type and class
+        NetworkEndian::write_u16(&mut bytes[name_size..name_size + size_of::<u16>()], self.qtype as u16);
+        NetworkEndian::write_u16(&mut bytes[name_size + size_of::<u16>()..name_size + 2 * size_of::<u16>()], self.class as u16);
 
         bytes
     }
@@ -85,7 +95,7 @@ mod tests {
     #[test]
     fn test_dns_question() {
         std::env::set_var("RUST_BACKTRACE", "1");
-        let q = Question::new(Name::new("question.example.com"), Type::A, Class::IN, true);
+        let q = Question::new(Name::new("question.example.com"), Type::A, Class::IN, false);
         println!("Question 1: {:?}", q);
 
         let raw = q.raw();

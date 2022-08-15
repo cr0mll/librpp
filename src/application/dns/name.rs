@@ -103,10 +103,12 @@ impl Raw for Name {
     fn raw(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(self.raw_size());
 
+        
         for label in &self.labels {
             bytes.append(&mut label.raw());
         }
 
+        bytes.push(0);
         bytes
     }
 
@@ -116,7 +118,7 @@ impl Raw for Name {
             size += label.raw_size();
         }
 
-        size
+        size + 1 // + 1 for the null byte at the end.
     }
 }
 
