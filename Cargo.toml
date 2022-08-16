@@ -1,9 +1,9 @@
 [package]
 name = "lrpp"
-version = "0.1.1"
+version = "0.1.2"
 license = "MIT"
 edition = "2021"
-description = "A Rust library for packet parsing."
+description = "A Rust library for network packet parsing."
 repository = "https://github.com/cr0mll/librpp"
 categories = ["parsing", "parser-implementations", "network-programming"]
 keywords = ["librpp", "lrpp", "packet", "parsing", "parser"]
