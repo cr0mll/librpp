@@ -22,7 +22,7 @@ mod flags {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct DNSHeader {
     pub id: u16,
-    flags: u16,
+    pub flags: u16,
     pub questions_count: u16,
     pub answers_count: u16,
     pub name_servers_count: u16,
@@ -30,9 +30,14 @@ pub struct DNSHeader {
 }
 
 impl DNSHeader {
+    /// Constructs an empty DNS header
+    pub fn new() -> Self {
+        DNSHeader { id: 0, flags: 0, questions_count: 0, answers_count: 0, name_servers_count: 0, additional_records_count: 0 }
+    }
+
     /// Constructs a DNS header from the values given.
     /// Use this when artificially creating packets.
-    pub fn new(id: u16, flags: u16, questions_count: u16, answers_count: u16, name_servers_count: u16, additional_records_count: u16) -> Self {
+    pub fn from_values(id: u16, flags: u16, questions_count: u16, answers_count: u16, name_servers_count: u16, additional_records_count: u16) -> Self {
         DNSHeader { id, flags, questions_count, answers_count, name_servers_count, additional_records_count }
     }
 

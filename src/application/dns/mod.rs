@@ -18,22 +18,29 @@ use crate::Raw;
 /// A struct representing the DNS layer of a packet.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DNSLayer {
-    pub header: DNSHeader,
-    pub questions: Vec<Question>,
-    pub answers: Vec<ResourceRecord>,
-    pub authority: Vec<ResourceRecord>,
-    pub additional: Vec<ResourceRecord>
+    header: DNSHeader,
+    questions: Vec<Question>,
+    answers: Vec<ResourceRecord>,
+    authority: Vec<ResourceRecord>,
+    additional: Vec<ResourceRecord>
 }
 
 impl DNSLayer {
     /// Constructs a new DNS layer from the given values.
-    pub fn new(header: DNSHeader, questions: Vec<Question>, answers: Vec<ResourceRecord>, authority: Vec<ResourceRecord>, additional: Vec<ResourceRecord>) -> Self{
+    pub fn new() -> Self{
         DNSLayer {
-            header,
-            questions,
-            answers,
-            authority,
-            additional
+            header: DNSHeader {
+                id: 0,
+                flags: 0,
+                questions_count: 0,
+                answers_count: 0,
+                name_servers_count: 0,
+                additional_records_count: 0
+            },
+            questions: Vec::new(),
+            answers: Vec::new(),
+            authority: Vec::new(),
+            additional: Vec::new()
         }
     }
 
@@ -73,6 +80,84 @@ impl DNSLayer {
         }
 
         DNSLayer { header, questions, answers, authority, additional }
+    }
+
+    pub fn questions(&self) -> &[Question] {
+        &self.questions
+    }
+
+    pub fn questions_mut(&mut self) -> &mut [Question] {
+        &mut self.questions
+    }
+
+    pub fn asnwers(&self) -> &[ResourceRecord] {
+        &self.answers
+    }
+
+    pub fn answers_mut(&mut self) -> &mut [ResourceRecord] {
+        &mut self.answers
+    }
+
+
+    pub fn authority(&self) -> &[ResourceRecord] {
+        &self.authority
+    }
+
+    pub fn authority_mut(&mut self) -> &mut [ResourceRecord] {
+        &mut self.authority
+    }
+
+
+    pub fn additional(&self) -> &[ResourceRecord] {
+        &self.additional
+    }
+
+    pub fn additional_mut(&mut self) -> &mut [ResourceRecord] {
+        &mut self.additional
+    }
+
+    /// Adds a question to the packet.
+    pub fn add_question(&mut self, question: Question) {
+        self.questions.push(question);
+        self.header.questions_count += 1;
+    }
+
+    /// Removes a question from the packet.
+    /// Returns the removed question.
+    pub fn remove_question(&mut self, index: u16) -> Question {
+        self.questions.remove(index as usize)
+    }
+
+    /// Adds an answer to the packet.
+    pub fn add_answer(&mut self, answer: ResourceRecord) {
+        self.answers.push(answer);
+        self.header.answers_count += 1;
+    }
+
+    /// Removes an answer from the packet.
+    /// Returns the removed answer.
+    pub fn remove_answer(&mut self, index: u16) -> ResourceRecord {
+        self.answers.remove(index as usize)
+    }
+
+    pub fn add_authority(&mut self, authority: ResourceRecord) {
+        self.authority.push(authority);
+        self.header.name_servers_count += 1;
+    }
+
+    /// Returns the removed authority entry.
+    pub fn remove_authority(&mut self, index: u16) -> ResourceRecord {
+        self.answers.remove(index as usize)
+    }
+
+    pub fn add_additional(&mut self, additional: ResourceRecord) {
+        self.additional.push(additional);
+        self.header.additional_records_count += 1;
+    }
+
+    /// Returns the removed additional resource record.
+    pub fn remove_additional(&mut self, index: u16) -> ResourceRecord {
+        self.additional.remove(index as usize)
     }
 }
 

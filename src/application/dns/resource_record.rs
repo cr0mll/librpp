@@ -7,6 +7,7 @@ use crate::Raw;
 use crate::application::dns::{Type, Class, Name};
 use super::rdata::RData;
 
+/// A structure representing a DNS resource record.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ResourceRecord {
     pub name: Name,

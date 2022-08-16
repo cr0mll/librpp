@@ -38,6 +38,16 @@ impl Question {
         }
     }
 
+    /// Sets the class of the question while preserving the unicast_response bit.
+    pub fn set_class(&mut self, class: Class) {
+        self.class = class as u16 | (0x8000 * self.prefers_unicast_response() as u16)
+    }
+
+    /// Changes the unicast_response bit in the class field to the specified value.
+    pub fn set_unicast_response(&mut self, value: bool) {
+        self.class = (self.class & !0x8000) | (0x8000 * value as u16)
+    }
+
     /// Retreives the class of the question.
     /// # Panics
     /// If the class is invalid, which may only happen if the question has been manually altered without using the provided API.
