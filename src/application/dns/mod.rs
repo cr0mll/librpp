@@ -1,8 +1,8 @@
-mod header;
-mod question;
-mod resource_record;
-mod name;
-mod rdata;
+pub mod header;
+pub mod question;
+pub mod resource_record;
+pub mod name;
+pub mod rdata;
 
 use std::mem::size_of;
 
