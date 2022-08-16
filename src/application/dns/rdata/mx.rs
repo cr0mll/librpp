@@ -6,7 +6,7 @@ use crate::{application::dns::Name, Raw};
 
 
 /// Used for mail exchange information
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MX {
     /// An integer which specifies the preference given to this record among others with the same owner.  
     /// Lower values mean higher preference.

@@ -10,7 +10,7 @@ mod mx;
 pub use afsdb::*;
 pub use mx::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// Similar to dns::Type, but contains data.
 pub enum RData {
     /// Represents an IPv4 address

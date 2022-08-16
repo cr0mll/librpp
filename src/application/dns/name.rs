@@ -1,6 +1,7 @@
 use crate::Raw;
 
-#[derive(Debug)]
+/// Represents a label from a DNS resource name.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Label {
     /// DNS name labels may be at most 255 in length.
     length: u8, 
@@ -8,7 +9,8 @@ pub struct Label {
 }
 
 impl Label {
-    fn new(contents: String) -> Self {
+    fn new(mut contents: String) -> Self {
+        contents = contents.replace('.', "");
         Label { length: u8::try_from(contents.len()).expect("DNS name labels may be at most 255 in length."), contents }
     }
 
@@ -46,7 +48,7 @@ impl Raw for Label {
 }
 
 /// A DNS resource name comprised of labels.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Name {
     labels: Vec<Label>
 }
@@ -103,17 +105,17 @@ impl Raw for Name {
     fn raw(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(self.raw_size());
 
-        
         for label in &self.labels {
             bytes.append(&mut label.raw());
         }
 
-        bytes.push(0);
+        bytes.push(0); // the null byte at the end
         bytes
     }
 
     fn raw_size(&self) -> usize {
         let mut size = 0;
+
         for label in &self.labels {
             size += label.raw_size();
         }
@@ -144,7 +146,7 @@ mod tests {
 
     #[test]
     fn test_dns_name() {
-        std::env::set_var("RUST_BACKTRACE", "1");
+        std::env::set_var("RUST_BACKTRACE", "0");
         // Name creation
         let name = Name::new("from.string.example.com");
         assert_eq!(name.to_string(), "from.string.example.com");
@@ -153,17 +155,18 @@ mod tests {
         assert_eq!(name.to_string(), "other.example.com");
 
         let labels: Vec<name::Label> = vec![name::Label::new("new".to_string()), name::Label::new("example".to_string()), name::Label::new("com".to_string())];
-        let name = Name::from_labels(labels);
+        let name = Name::from_labels(labels.clone());
         assert_eq!(name.to_string(), "new.example.com");
 
         // Name get labels
-        println!("Label names: {:?}", name.labels());
+        assert_eq!(&labels, name.labels());
 
-        // Name and Label raw
+        // Name and label raw
         let label = name::Label::new("from".to_string());
-        println!("Label raw: {:?}", label.raw());
+        assert_eq!(b"\x04\x66\x72\x6F\x6D", &label.raw()[..]);
+        assert_eq!(name::Label::from_bytes(b"\x04\x66\x72\x6F\x6D"), label);
 
         let name = Name::new("from.string.example.com");
-        println!("Name raw: {:?}", name.raw());
+        assert_eq!(b"\x04\x66\x72\x6F\x6D\x06\x73\x74\x72\x69\x6E\x67\x07\x65\x78\x61\x6D\x70\x6C\x65\x03\x63\x6F\x6D\x00", &name.raw()[..]);
     }
 }

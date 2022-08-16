@@ -15,16 +15,18 @@ pub use name::Name;
 use crate::packet::{Layer, LayerType};
 use crate::Raw;
 
-#[derive(Debug)]
+/// A struct representing the DNS layer of a packet.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DNSLayer {
-    header: DNSHeader,
-    questions: Vec<Question>,
-    answers: Vec<ResourceRecord>,
-    authority: Vec<ResourceRecord>,
-    additional: Vec<ResourceRecord>
+    pub header: DNSHeader,
+    pub questions: Vec<Question>,
+    pub answers: Vec<ResourceRecord>,
+    pub authority: Vec<ResourceRecord>,
+    pub additional: Vec<ResourceRecord>
 }
 
 impl DNSLayer {
+    /// Constructs a new DNS layer from the given values.
     pub fn new(header: DNSHeader, questions: Vec<Question>, answers: Vec<ResourceRecord>, authority: Vec<ResourceRecord>, additional: Vec<ResourceRecord>) -> Self{
         DNSLayer {
             header,
@@ -35,6 +37,7 @@ impl DNSLayer {
         }
     }
 
+    /// Constructs a new DNS layer from the given bytes.
     pub fn from_bytes(bytes: &[u8]) -> Self {
         let header = DNSHeader::from_bytes(bytes[0..size_of::<DNSHeader>()].try_into().unwrap());
 
@@ -88,6 +91,7 @@ impl Layer for DNSLayer {
 
     fn as_any(&self) -> &dyn std::any::Any { self }
 
+    /// The payload of the DNS packet is everything without the DNS header.
     fn get_payload(&self) -> Vec<u8> {
         let mut bytes:Vec<u8> = Vec::with_capacity(self.raw_size() - size_of::<DNSHeader>());
 
@@ -140,7 +144,7 @@ impl Raw for DNSLayer {
 
 /// Possible Type values for a Question in a DNS packet  
 #[repr(u16)]
-#[derive(Debug, Copy, Clone, PartialEq, TryFromPrimitive)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, TryFromPrimitive)]
 pub enum Type {
     /// Represents an IPv4 address
     A = 0x0001,
@@ -189,7 +193,7 @@ pub enum Type {
 }
 
 
-/// Possible Class values for a Resource in a DNS packet  
+/// Possible Class values for a resource in a DNS packet  
 #[repr(u16)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, TryFromPrimitive)]
 pub enum Class {
@@ -207,23 +211,25 @@ pub enum Class {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Raw, application::dns::DNSHeader};
+    use crate::{Raw, application::dns::DNSHeader, packet::{Layer, LayerType}};
 
     use super::DNSLayer;
-
 
     #[test]
     fn test_dns_name() {
         std::env::set_var("RUST_BACKTRACE", "full");
 
-        let bytes = b"\x42\x74\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x04\x70\x72\x6f\x64\x0e\x69\x6e\x67\x65\x73\x74\x69\x6f\x6e\x2d\x65\x64\x67\x65\x04\x70\x72\x6f\x64\x07\x64\x61\x74\x61\x6f\x70\x73\x06\x6d\x6f\x7a\x67\x63\x70\x03\x6e\x65\x74\x00\x00\x01\x00\x01";
+        let bytes = b"\xd2\x10\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x20\x61\x62\x62\x38\x31\x65\x38\x39\x33\x36\x35\x62\x62\x36\x32\x35\x30\x61\x38\x63\x31\x62\x32\x62\x63\x34\x66\x31\x66\x66\x31\x64\x09\x73\x61\x66\x65\x66\x72\x61\x6d\x65\x11\x67\x6f\x6f\x67\x6c\x65\x73\x79\x6e\x64\x69\x63\x61\x74\x69\x6f\x6e\x03\x63\x6f\x6d\x00\x00\x01\x00\x01";
         let layer = DNSLayer::from_bytes(bytes);
-        println!("DNS layer: {:#?}", layer);
+        assert_eq!(&layer.raw(), bytes);
 
-        let new_bytes = layer.raw();
-        assert_eq!(new_bytes, bytes);
-        
-        let layer = DNSLayer::from_bytes(&new_bytes);
-        println!("DNS layer: {:#?}", layer);
+        let layer1 = DNSLayer::from_bytes(&layer.raw());
+        assert_eq!(layer1, layer);
+
+        assert_eq!(layer.get_name(), "DNS");
+        assert_eq!(layer.get_osi_level(), 7);
+        assert_eq!(layer.get_type(), LayerType::DNSLayer);
+        assert_eq!(layer.get_payload(), b"\x20\x61\x62\x62\x38\x31\x65\x38\x39\x33\x36\x35\x62\x62\x36\x32\x35\x30\x61\x38\x63\x31\x62\x32\x62\x63\x34\x66\x31\x66\x66\x31\x64\x09\x73\x61\x66\x65\x66\x72\x61\x6d\x65\x11\x67\x6f\x6f\x67\x6c\x65\x73\x79\x6e\x64\x69\x63\x61\x74\x69\x6f\x6e\x03\x63\x6f\x6d\x00\x00\x01\x00\x01")
+
     }
 }

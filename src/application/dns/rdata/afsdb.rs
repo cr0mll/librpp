@@ -6,7 +6,7 @@ use crate::{application::dns::Name, Raw};
 
 
 /// Represents an AFSDB record. AFSDB records pertain to servers with ASD cells.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AFSDB {
     pub subtype: u16,
     pub name: Name

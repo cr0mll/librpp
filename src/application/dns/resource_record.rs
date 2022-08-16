@@ -4,10 +4,10 @@ use byteorder::{NetworkEndian, ByteOrder};
 
 use crate::Raw;
 
-use crate::application::dns::{Type,Class, Name};
+use crate::application::dns::{Type, Class, Name};
 use super::rdata::RData;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ResourceRecord {
     pub name: Name,
     pub rtype: Type,

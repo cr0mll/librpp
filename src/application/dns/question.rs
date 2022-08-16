@@ -8,6 +8,7 @@ use crate::application::dns::{Name, Type, Class};
 use crate::Raw;
 
 /// A structure representing a DNS query.
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Question {
     pub name: Name,
     pub qtype: Type,
@@ -15,6 +16,7 @@ pub struct Question {
 }
 
 impl Question {
+    /// Constructs a DNS question from the given values.
     pub fn new(name: Name, qtype: Type, class: Class, unicast_response: bool) -> Self {
         Question {
             name,
@@ -37,7 +39,8 @@ impl Question {
     }
 
     /// Retreives the class of the question.
-    /// panic!() is called if the class is invalid, which may only happen if the question has been manually altered in unsafe blocks.
+    /// # Panics
+    /// If the class is invalid, which may only happen if the question has been manually altered without using the provided API.
     pub fn class(&self) -> Class {
         // Apparently Rust has no API for converting ints to enums. C++ - 1, Rust - 0.
         Class::try_from(self.class & 0x00ff).expect("DNS question contains invalid classs!")
@@ -96,12 +99,15 @@ mod tests {
     #[test]
     fn test_dns_question() {
         std::env::set_var("RUST_BACKTRACE", "1");
-        let q = Question::new(Name::new("question.example.com"), Type::A, Class::IN, false);
-        println!("Question 1: {:?}", q);
 
-        let raw = q.raw();
-        println!("Raw question: {:?}", raw);
-        let q = Question::from_bytes(&raw);
-        println!("Question 1: {:?}", q);
+        let q = Question::new(Name::new("question.example.com"), Type::A, Class::IN, true);
+
+        assert_eq!(q.class(), Class::IN);
+        assert_eq!(q.prefers_unicast_response(), true);
+
+        let q1 = Question::from_bytes(&q.raw());
+        assert_eq!(q, q1);
+        assert_eq!(q.raw(), q1.raw());
+
     }
 }

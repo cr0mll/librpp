@@ -1,9 +1,12 @@
+use num_enum::TryFromPrimitive;
+
 use crate::{datalink, application};
 
 use std::any::Any;
 
 pub const MAX_LAYER_COUNT: u8 = 7;
 
+/// A struct representing a packet.
 pub struct Packet {
     layers: Vec<Box<dyn Layer>>
 }
@@ -56,24 +59,9 @@ pub trait Layer {
     fn as_any(&self) -> &dyn Any;
 }
 
-/// A private enum for the implementation of Packet.
-/// The Packet struct automatically converts to the underlying layer type when get_layer() is invoked.
-enum Layers {
-    DNSLayer(application::dns::DNSLayer)
-}
-
-
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum LayerType {
     DNSLayer
-}
-
-impl From<Layers> for LayerType {
-    fn from(other: Layers) -> Self {
-        match other {
-            // Layers::EthernetLayer(_) => Self::EthernetLayer,
-            Layers::DNSLayer(_) => Self::DNSLayer
-        }
-    }
 }
 
 #[cfg(test)]

@@ -19,7 +19,7 @@ mod flags {
 }
 
 /// A structure representing a DNS header.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct DNSHeader {
     pub id: u16,
     flags: u16,
@@ -61,19 +61,22 @@ impl DNSHeader {
         ((self.flags & flags::OPCODE) >> flags::OPCODE.trailing_zeros()).into()
     }
 
-    /// 
+    /// Returns whether or not the packet is an authoritative answer.
     pub fn is_authoritative_answer(&self) -> bool {
         self.flags & flags::AUTHORITATIVE != 0
     }
 
+    /// Returns whether or not the packet is truncated.
     pub fn is_truncated(&self) -> bool {
         self.flags & flags::TRUNCATED != 0
     }
 
+    /// Returns whether or not recursion is desired.
     pub fn is_recursion_desired(&self) -> bool {
         self.flags & flags::RECURSION_DESIRED != 0
     }
 
+    /// Returns whether or not recursion is available.
     pub fn is_recursion_available(&self) -> bool {
         self.flags & flags::RECURSION_AVAILABLE != 0
     }
@@ -104,7 +107,8 @@ impl Raw for DNSHeader {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+/// An enum representing the possible values for the DNS opcode.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum OpCode {
     /// Normal query
     StandardQuery = 0,
@@ -134,7 +138,8 @@ impl From<u16> for OpCode {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+/// An enum representing the possible values for the response code in the packet.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum RCode {
     /// No error condition
     NoError = 0,
