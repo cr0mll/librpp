@@ -3,6 +3,7 @@ pub mod application;
 pub mod packet;
 
 pub use packet::Packet;
+pub use datalink::MACAddr;
 
 pub trait Raw {
     fn raw(&self) -> Vec<u8>;
